@@ -113,34 +113,49 @@ LANGUAGE C IMMUTABLE STRICT;
 
 
 -- Comparison
-CREATE OR REPLACE FUNCTION url_eq(url, url) 
-RETURNS boolean LANGUAGE internal IMMUTABLE AS 'int8eq';
+CREATE OR REPLACE FUNCTION url_eq(url, url)
+RETURNS BOOLEAN
+AS '$libdir/url', 'url_eq'
+LANGUAGE C IMMUTABLE STRICT;
 
-CREATE OR REPLACE FUNCTION url_ne(url, url) 
-RETURNS boolean LANGUAGE internal IMMUTABLE AS 'int8ne';
+CREATE OR REPLACE FUNCTION url_ne(url, url)
+RETURNS BOOLEAN
+AS '$libdir/url', 'url_ne'
+LANGUAGE C IMMUTABLE STRICT;
 
-CREATE OR REPLACE FUNCTION url_lt(url, url) 
-RETURNS boolean LANGUAGE internal IMMUTABLE AS 'int8lt';
+CREATE OR REPLACE FUNCTION url_lt(url, url)
+RETURNS BOOLEAN
+AS '$libdir/url', 'url_lt'
+LANGUAGE C IMMUTABLE STRICT;
 
-CREATE OR REPLACE FUNCTION url_le(url, url) 
-RETURNS boolean LANGUAGE internal IMMUTABLE AS 'int8le';
+CREATE OR REPLACE FUNCTION url_le(url, url)
+RETURNS BOOLEAN
+AS '$libdir/url', 'url_le'
+LANGUAGE C IMMUTABLE STRICT;
 
-CREATE OR REPLACE FUNCTION url_gt(url, url) 
-RETURNS boolean LANGUAGE internal IMMUTABLE AS 'int8gt';
+CREATE OR REPLACE FUNCTION url_gt(url, url)
+RETURNS BOOLEAN
+AS '$libdir/url', 'url_gt'
+LANGUAGE C IMMUTABLE STRICT;
 
-CREATE OR REPLACE FUNCTION url_ge(url, url) 
-RETURNS boolean LANGUAGE internal IMMUTABLE AS 'int8ge';
+CREATE OR REPLACE FUNCTION url_ge(url, url)
+RETURNS BOOLEAN
+AS '$libdir/url', 'url_ge'
+LANGUAGE C IMMUTABLE STRICT;
 
-CREATE OR REPLACE FUNCTION url_cmp(url, url) 
-RETURNS integer LANGUAGE internal IMMUTABLE AS 'btint8cmp';
---index Comparaison
+CREATE OR REPLACE FUNCTION url_cmp(url, url)
+RETURNS INTEGER
+AS '$libdir/url', 'url_cmp'
+LANGUAGE C IMMUTABLE STRICT;
+
+-- Comparison index
 
 CREATE OPERATOR = (
 	LEFTARG = url,
 	RIGHTARG = url,
 	PROCEDURE = url_eq,
-	COMMUTATOR = '=',
-	NEGATOR = '<>',
+	COMMUTATOR = =,
+	NEGATOR = <>,
 	RESTRICT = eqsel,
 	JOIN = eqjoinsel
 );
@@ -150,8 +165,8 @@ CREATE OPERATOR <> (
 	LEFTARG = url,
 	RIGHTARG = url,
 	PROCEDURE = url_ne,
-	COMMUTATOR = '<>',
-	NEGATOR = '=',
+	COMMUTATOR = <>,
+	NEGATOR = =,
 	RESTRICT = neqsel,
 	JOIN = neqjoinsel
 );

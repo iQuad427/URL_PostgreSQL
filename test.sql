@@ -17,6 +17,9 @@ INSERT INTO url_table(id, purl) VALUES(9, 'https://hello@google.com:80/ULB/SYSTD
 INSERT INTO url_table(id, purl) VALUES(10, 'https://hello@google.com:80/ULB/SYSTDATA/path#3');
 INSERT INTO url_table(id, purl) VALUES(11, 'https://hello@google.com:80/ULB/SYSTDATA/path?help#3');
 
+SELECT * FROM url_table
+WHERE purl > 'test';
+
 SELECT purl, getProtocol(purl), getDefaultPort(purl), getUserInfo(purl), getAuthority(purl), getHost(purl), getPort(purl), getFile(purl), getPath(purl), getQuery(purl), getRef(purl)
 FROM url_table;
 

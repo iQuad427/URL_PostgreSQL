@@ -98,7 +98,7 @@ postgres_url *postgres_url_from_str(char *str) {
     if ((substr = strstr(authority, ":")) != NULL) {
         port = palloc(sizeof(char) * strlen(substr));
         host = palloc(sizeof(char) * (substr - authority + 1));
-        memcpy(host, authority, substr - authority);
+        memset(substr, 0, strlen(substr));
         host[substr - authority] = '\0';
         strcpy(port, substr);
     } else {
@@ -308,11 +308,11 @@ PG_FUNCTION_INFO_V1(getDefaultPort);
 Datum getDefaultPort(PG_FUNCTION_ARGS) {
   postgres_url *url = (postgres_url*) PG_GETARG_POINTER(0);
   int32_t port = 0;
-  if (!strcmp(url->protocol, "http://"))
+  if (!strcmp(url->protocol, "http"))
     port = 80;
-  if (!strcmp(url->protocol, "https://"))
+  if (!strcmp(url->protocol, "https"))
     port = 443;
-  if (!strcmp(url->protocol, "ftp://"))
+  if (!strcmp(url->protocol, "ftp"))
     port = 21;
 
   PG_RETURN_INT64(port);
@@ -404,3 +404,70 @@ Datum toString(PG_FUNCTION_ARGS) {
   postgres_url *url = (postgres_url*) PG_GETARG_POINTER(0);
   PG_RETURN_CSTRING(postgres_url_to_str(url));
 }
+
+PG_FUNCTION_INFO_V1(url_eq);
+Datum url_eq(PG_FUNCTION_ARGS) {
+    postgres_url *url1 = (postgres_url*) PG_GETARG_POINTER(0);
+    postgres_url *url2 = (postgres_url*) PG_GETARG_POINTER(1);
+    PG_RETURN_BOOL(!strcmp(url1->raw_url, url2->raw_url));
+}
+
+PG_FUNCTION_INFO_V1(url_ne);
+Datum url_ne(PG_FUNCTION_ARGS) {
+    postgres_url *url1 = (postgres_url*) PG_GETARG_POINTER(0);
+    postgres_url *url2 = (postgres_url*) PG_GETARG_POINTER(1);
+    PG_RETURN_BOOL(strcmp(url1->raw_url, url2->raw_url));
+}
+
+PG_FUNCTION_INFO_V1(url_lt);
+Datum url_lt(PG_FUNCTION_ARGS) {
+    postgres_url *url1 = (postgres_url*) PG_GETARG_POINTER(0);
+    postgres_url *url2 = (postgres_url*) PG_GETARG_POINTER(1);
+    if (strcmp(url1->raw_url, url2->raw_url) < 0){
+        PG_RETURN_BOOL(1);//true
+    } else {
+        PG_RETURN_BOOL(0);//false
+    }
+}
+
+PG_FUNCTION_INFO_V1(url_le);
+Datum url_le(PG_FUNCTION_ARGS) {
+    postgres_url *url1 = (postgres_url*) PG_GETARG_POINTER(0);
+    postgres_url *url2 = (postgres_url*) PG_GETARG_POINTER(1);
+    if (strcmp(url1->raw_url, url2->raw_url) <= 0){
+        PG_RETURN_BOOL(1);//true
+    } else {
+        PG_RETURN_BOOL(0);//false
+    }
+}
+
+PG_FUNCTION_INFO_V1(url_gt);
+Datum url_gt(PG_FUNCTION_ARGS) {
+    postgres_url *url1 = (postgres_url*) PG_GETARG_POINTER(0);
+    postgres_url *url2 = (postgres_url*) PG_GETARG_POINTER(1);
+    if (strcmp(url1->raw_url, url2->raw_url) > 0){
+        PG_RETURN_BOOL(1);//true
+    } else {
+        PG_RETURN_BOOL(0);//false
+    }
+}
+
+PG_FUNCTION_INFO_V1(url_ge);
+Datum url_ge(PG_FUNCTION_ARGS) {
+    postgres_url *url1 = (postgres_url*) PG_GETARG_POINTER(0);
+    postgres_url *url2 = (postgres_url*) PG_GETARG_POINTER(1);
+    if (strcmp(url1->raw_url, url2->raw_url) >= 0){
+        PG_RETURN_BOOL(1);//true
+    } else {
+        PG_RETURN_BOOL(0);//false
+    }
+}
+
+PG_FUNCTION_INFO_V1(url_cmp);
+Datum url_cmp(PG_FUNCTION_ARGS) {
+    // TODO
+    postgres_url *url1 = (postgres_url*) PG_GETARG_POINTER(0);
+    postgres_url *url2 = (postgres_url*) PG_GETARG_POINTER(1);
+    PG_RETURN_INT64(strcmp(url1->raw_url, url2->raw_url));
+}
+
