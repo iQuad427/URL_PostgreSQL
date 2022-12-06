@@ -14,7 +14,7 @@ LANGUAGE C IMMUTABLE STRICT;
 CREATE TYPE url (
 	INPUT          = url_in,
 	OUTPUT         = url_out,
-    INTERNALLENGTH = 7083
+    INTERNALLENGTH = 7000
 );
 COMMENT ON TYPE url IS 'url datatype for PostgreSQL';
 

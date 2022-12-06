@@ -7,4 +7,3 @@ LDFLAGS=-lrt
 PG_CONFIG ?= /Applications/Postgres.app/Contents/Versions/14/bin/pg_config
 PGXS = $(shell /Applications/Postgres.app/Contents/Versions/14/bin/pg_config --pgxs)
 include $(PGXS)
-
