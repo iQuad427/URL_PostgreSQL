@@ -77,6 +77,12 @@ postgres_url *postgres_url_from_str(char *str) {
     elog(DEBUG1,"Authority");
     char *authority = NULL; // host + port
     if ((psubstr = strstr(str, "/")) != NULL) {
+        if (*(psubstr - 1) == '.') {
+            psubstr -= 1;
+            if (*(psubstr - 1) == '.') {
+                psubstr -= 1;
+            }
+        }
         authority = palloc(sizeof(char) * (psubstr - str + 1));
         memcpy(authority, str, psubstr - str);
         authority[psubstr - str] = '\0';
@@ -98,40 +104,37 @@ postgres_url *postgres_url_from_str(char *str) {
     if ((substr = strstr(authority, ":")) != NULL) {
         port = palloc(sizeof(char) * strlen(substr));
         host = palloc(sizeof(char) * (substr - authority + 1));
-        memset(substr, 0, strlen(substr));
+        memcpy(host, authority, strlen(authority) - strlen(substr));
         host[substr - authority] = '\0';
         strcpy(port, substr);
     } else {
         host = palloc(sizeof(char) * (strlen(authority) + 1));
         memcpy(host, authority, sizeof(char) * strlen(authority));
+        host[strlen(authority)] = '\0';
     }
 
     if (host != NULL) {
         elog(DEBUG1,"Host : %s", host);
-        strcpy(url->host, host);
+        memcpy(url->host, host, strlen(host));
+        url->host[strlen(host)] = '\0';
+        elog(DEBUG1,"Host : %s", url->host);
     }
 
     if (port != NULL) {
         elog(DEBUG1,"Port : %s", port);
-        strcpy(url->port, port);
+        memcpy(url->port, port, strlen(port));
     }
 
     elog(DEBUG1,"Path");
     char *path = NULL;
     if ((psubstr = strstr(str, "?")) != NULL) {
-        elog(DEBUG1,"Saw ? after path");
-        elog(DEBUG1,"Read size : %d", (int) (psubstr - str));
         path = palloc(sizeof(char) * (psubstr - str + 1));
         memcpy(path, str, psubstr - str);
-        elog(DEBUG1,"Path read : %s", path);
         path[psubstr - str] = '\0';
         str = psubstr;
     } else if ((psubstr = strstr(str, "#")) != NULL) {
-        elog(DEBUG1,"Saw # after path");
-        elog(DEBUG1,"Read size : %d", (int) (psubstr - str));
         path = palloc(sizeof(char) * (psubstr - str + 1));
         memcpy(path, str, psubstr - str);
-        elog(DEBUG1,"Path read : %s", path);
         path[psubstr - str] = '\0';
         str = psubstr;
     } else if (!end_of_parsing) {
@@ -225,74 +228,70 @@ Datum url_raw_constructor(PG_FUNCTION_ARGS);
 
 PG_FUNCTION_INFO_V1(url_raw_constructor);
 Datum url_raw_constructor(PG_FUNCTION_ARGS) {
-  char *str = PG_GETARG_CSTRING(0);
-  PG_RETURN_POINTER(postgres_url_from_str(str));
+    PG_RETURN_POINTER(postgres_url_from_str(PG_GETARG_CSTRING(0)));
 }
 
 Datum url_all_field_constructor(PG_FUNCTION_ARGS);
 
 PG_FUNCTION_INFO_V1(url_all_field_constructor);
 Datum url_all_field_constructor(PG_FUNCTION_ARGS) {
-  postgres_url *url = palloc(sizeof(postgres_url));
-
-  char* protocol = PG_GETARG_CSTRING(0);
-  char* host = PG_GETARG_CSTRING(1);
-  char* port = PG_GETARG_CSTRING(2);
-  char* path = PG_GETARG_CSTRING(3);
-
-  strcpy(url->protocol, protocol);
-  strcpy(url->host, host);
-  strcpy(url->port, port);
-  strcpy(url->path, path);
-
-  PG_RETURN_POINTER(url);
+    PG_RETURN_POINTER(postgres_url_from_str(strcat(strcat(strcat(strcat(strcat(
+            PG_GETARG_CSTRING(0), "://"), PG_GETARG_CSTRING(1)), ":"), PG_GETARG_CSTRING(2)), PG_GETARG_CSTRING(3))));
 }
 
 Datum url_some_field_constructor(PG_FUNCTION_ARGS);
 
 PG_FUNCTION_INFO_V1(url_some_field_constructor);
 Datum url_some_field_constructor(PG_FUNCTION_ARGS) {
-  postgres_url *url = palloc(sizeof(postgres_url));
-
-  strcpy(url->protocol, PG_GETARG_CSTRING(0));
-  strcpy(url->host, PG_GETARG_CSTRING(1));
-  strcpy(url->path, PG_GETARG_CSTRING(2));
-
-  PG_RETURN_POINTER(url);
+    PG_RETURN_POINTER(strcat(strcat(strcat(PG_GETARG_CSTRING(0), "://"), PG_GETARG_CSTRING(1)), PG_GETARG_CSTRING(2)));
 }
 
 Datum url_copy_constructor(PG_FUNCTION_ARGS);
 
 PG_FUNCTION_INFO_V1(url_copy_constructor);
 Datum url_copy_constructor(PG_FUNCTION_ARGS) {
-  postgres_url *context = palloc(sizeof(postgres_url));
-  context = PG_GETARG_POINTER(0);
+    postgres_url *context = (postgres_url*) PG_GETARG_POINTER(0);
+    postgres_url *spec = postgres_url_from_str(PG_GETARG_CSTRING(1));
+    // 'https://google.com/drive/u0', 'https://hello@google.com:80/ULB/SYSTDATA/path?help#3
 
-  postgres_url *spec = palloc(sizeof(postgres_url));
-  spec = postgres_url_from_str(PG_GETARG_CSTRING(1));
+    postgres_url *url = palloc(sizeof(postgres_url));
 
-  postgres_url *url = palloc(sizeof(postgres_url));
-
-  if (strcmp(context->protocol, spec->protocol)) {
-    url = spec;
-  } else {
-    if (spec->userinfo != NULL && spec->host != NULL) {
-      strcpy(url->userinfo, spec->userinfo);
-      strcpy(url->host, spec->host);
+    if (strlen(spec->path) == 0
+            && strlen(spec->protocol) == 0
+            && strlen(spec->host) == 0
+            && strlen(spec->port) == 0
+            && strlen(spec->query) == 0) {
+        url = context;
     } else {
-      strcpy(url->userinfo, context->userinfo);
-      strcpy(url->host, context->host);
+        if (strlen(spec->query) != 0) strcpy(url->query, spec->query);
+        if (strlen(spec->fragment) != 0) strcpy(url->fragment, spec->fragment);
     }
 
-    if (!strcmp(spec->path[0], "/")) {
-      strcpy(url->path, spec->path);
+    if (strcmp(context->protocol, spec->protocol) == 0) {
+        url = spec;
     } else {
-      // TODO : should remove './..' characters from spec path (cf. JavaDoc)
-      strcpy(url->path, strcat(context->path, spec->path));
+        strcpy(url->protocol, context->protocol);
     }
-  }
 
-  PG_RETURN_POINTER(url);
+    // TODO : userinfo in authority?
+    if (strlen(spec->host) != 0) {
+        strcpy(url->host, spec->host);
+        if (strlen(spec->port) != 0) strcpy(url->port, spec->port);
+    } else {
+        strcpy(url->host, context->host);
+        if (strlen(context->port) != 0) strcpy(url->port, context->port);
+    }
+
+    if (strlen(spec->path) != 0) {
+        if (!strcmp(spec->path[0], "/")) {
+            strcpy(url->path, spec->path);
+        } else {
+            // TODO : should remove './..' characters from spec path (cf. JavaDoc)
+            strcpy(url->path, strcat(context->path, spec->path));
+        }
+    }
+
+    PG_RETURN_POINTER(url);
 }
 
 // Getter
@@ -301,7 +300,9 @@ Datum url_copy_constructor(PG_FUNCTION_ARGS) {
 PG_FUNCTION_INFO_V1(getAuthority);
 Datum getAuthority(PG_FUNCTION_ARGS) {
     postgres_url *url = (postgres_url*) PG_GETARG_POINTER(0);
-    PG_RETURN_CSTRING(strcat(url->host, url->port));
+    char *host_cpy = palloc(sizeof(char) * strlen(url->host));
+    strcpy(host_cpy, url->host);
+    PG_RETURN_CSTRING(strcat(host_cpy, url->port));
 }
 
 PG_FUNCTION_INFO_V1(getDefaultPort);
@@ -321,8 +322,10 @@ Datum getDefaultPort(PG_FUNCTION_ARGS) {
 // file = path + query
 PG_FUNCTION_INFO_V1(getFile);
 Datum getFile(PG_FUNCTION_ARGS) {
-  postgres_url *url = (postgres_url*) PG_GETARG_POINTER(0);
-  PG_RETURN_CSTRING(strcat(url->path, url->query));
+    postgres_url *url = (postgres_url*) PG_GETARG_POINTER(0);
+    char *path_cpy = palloc(sizeof(char) * strlen(url->path));
+    strcpy(path_cpy, url->path);
+    PG_RETURN_CSTRING(strcat(path_cpy, url->query));
 }
 
 PG_FUNCTION_INFO_V1(getProtocol);
@@ -441,8 +444,9 @@ Datum url_le(PG_FUNCTION_ARGS) {
     }
 }
 
-PG_FUNCTION_INFO_V1(url_gt);
+PG_FUNCTION_INFO_V1(url_gt); // >
 Datum url_gt(PG_FUNCTION_ARGS) {
+    // ((postgres_url*) PG_GETARG_POINTER(0))->raw_url;
     postgres_url *url1 = (postgres_url*) PG_GETARG_POINTER(0);
     postgres_url *url2 = (postgres_url*) PG_GETARG_POINTER(1);
     if (strcmp(url1->raw_url, url2->raw_url) > 0){
@@ -465,7 +469,6 @@ Datum url_ge(PG_FUNCTION_ARGS) {
 
 PG_FUNCTION_INFO_V1(url_cmp);
 Datum url_cmp(PG_FUNCTION_ARGS) {
-    // TODO
     postgres_url *url1 = (postgres_url*) PG_GETARG_POINTER(0);
     postgres_url *url2 = (postgres_url*) PG_GETARG_POINTER(1);
     PG_RETURN_INT64(strcmp(url1->raw_url, url2->raw_url));
