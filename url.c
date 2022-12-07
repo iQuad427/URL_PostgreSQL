@@ -243,7 +243,8 @@ Datum url_some_field_constructor(PG_FUNCTION_ARGS);
 
 PG_FUNCTION_INFO_V1(url_some_field_constructor);
 Datum url_some_field_constructor(PG_FUNCTION_ARGS) {
-    PG_RETURN_POINTER(strcat(strcat(strcat(PG_GETARG_CSTRING(0), "://"), PG_GETARG_CSTRING(1)), PG_GETARG_CSTRING(2)));
+    PG_RETURN_POINTER(postgres_url_from_str(
+            strcat(strcat(strcat(PG_GETARG_CSTRING(0), "://"), PG_GETARG_CSTRING(1)), PG_GETARG_CSTRING(2))));
 }
 
 Datum url_copy_constructor(PG_FUNCTION_ARGS);
@@ -252,43 +253,89 @@ PG_FUNCTION_INFO_V1(url_copy_constructor);
 Datum url_copy_constructor(PG_FUNCTION_ARGS) {
     postgres_url *context = (postgres_url*) PG_GETARG_POINTER(0);
     postgres_url *spec = postgres_url_from_str(PG_GETARG_CSTRING(1));
-    // 'https://google.com/drive/u0', 'https://hello@google.com:80/ULB/SYSTDATA/path?help#3
+    // 'https://google.com/drive/u0', 'https://hello@google.com:80../ULB/SYSTDATA/path?help#3
 
-    postgres_url *url = palloc(sizeof(postgres_url));
+    postgres_url *url = (postgres_url*) palloc(sizeof(postgres_url));
 
     if (strlen(spec->path) == 0
             && strlen(spec->protocol) == 0
             && strlen(spec->host) == 0
             && strlen(spec->port) == 0
             && strlen(spec->query) == 0) {
+        elog(DEBUG1,"Spec not sufficiently defined, took context as url");
         url = context;
     } else {
+        elog(DEBUG1,"Spec sufficiently defined, took spec query and fragment");
         if (strlen(spec->query) != 0) strcpy(url->query, spec->query);
         if (strlen(spec->fragment) != 0) strcpy(url->fragment, spec->fragment);
     }
 
     if (strcmp(context->protocol, spec->protocol) == 0) {
-        url = spec;
-    } else {
+        elog(DEBUG1,"Protocols match, url as protocol : %s", context->protocol);
         strcpy(url->protocol, context->protocol);
+    } else {
+        elog(DEBUG1,"Protocols mismatch, took spec as url");
+        url = spec;
     }
 
     // TODO : userinfo in authority?
     if (strlen(spec->host) != 0) {
+        elog(DEBUG1,"Spec host defined -> used for url host : %s", spec->host);
         strcpy(url->host, spec->host);
         if (strlen(spec->port) != 0) strcpy(url->port, spec->port);
     } else {
+        elog(DEBUG1,"No spec host, took context host : %s", context->host);
         strcpy(url->host, context->host);
         if (strlen(context->port) != 0) strcpy(url->port, context->port);
     }
 
     if (strlen(spec->path) != 0) {
-        if (!strcmp(spec->path[0], "/")) {
+        elog(DEBUG1,"Spec path defined");
+        if (*spec->path == '/') {
+            elog(DEBUG1,"No relative path, no need to simplify");
             strcpy(url->path, spec->path);
         } else {
-            // TODO : should remove './..' characters from spec path (cf. JavaDoc)
-            strcpy(url->path, strcat(context->path, spec->path));
+            elog(DEBUG1,"Relative path, trying to simplify");
+            // compute the nbr of directory to exit from context (file_to_exit)
+            char* spec_substr = spec->path;
+            int file_to_exit = 0;
+            while ((spec_substr = strstr(spec_substr, "/")) != NULL || *(spec_substr + 1) != '.') {
+                if (*(spec_substr - 1) != '.' && *(spec_substr - 2) != '.') {
+                    file_to_exit++;
+                }
+            }
+
+            char* path_cpy = palloc(sizeof(char) * strlen(context->path));
+            strcpy(path_cpy, context->path);
+
+            // check the number of directory it is possible to exit
+            char* context_substr = context->path;
+            int nbr_of_file = 0;
+
+            // example : "/drive/u0/ulb"
+            while ((context_substr = strstr(context_substr, "/")) != NULL) {
+                if (strlen(context_substr) > 1) { // avoid taking into account the last '/' of '/drive/ulb/'
+                    nbr_of_file++;
+                }
+            }
+
+            // end of context path
+            char* current = path_cpy + strlen(path_cpy) - 1;
+            current--; // last character should not be a '/'
+            if (nbr_of_file >= file_to_exit) {
+                while (file_to_exit > 0) {
+                    if (*(current--) == '/') {
+                        memset(current, 0, sizeof(char) * strlen(current));
+                        file_to_exit--;
+                    }
+                }
+            }
+
+            strcpy(url->path, strcat(path_cpy, spec_substr));
         }
+    } else {
+        elog(DEBUG1,"Spec path not defined, took context path %s", context->host);
+        if (strlen(context->host) != 0) strcpy(url->host, context->host);
     }
 
     PG_RETURN_POINTER(url);
