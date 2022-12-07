@@ -1,5 +1,6 @@
 # url extension
-comment = 'URL datatype for PostgreSQL'
+comment = 'URL GiST opclass support (exclusion constraints)'
 default_version = '1.0'
 module_pathname = '$libdir/url'
 relocatable = true
+requires = 'btree_gist, url'

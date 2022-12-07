@@ -24,12 +24,13 @@ RETURNS url
 AS '$libdir/url', 'url_raw_constructor'
 LANGUAGE C IMMUTABLE STRICT;
 
-CREATE OR REPLACE FUNCTION url(cstring, cstring, cstring, cstring)
+CREATE OR REPLACE FUNCTION url(cstring, cstring, int, cstring)
 RETURNS url
 AS '$libdir/url', 'url_all_field_constructor'
 LANGUAGE C IMMUTABLE STRICT;
 
-CREATE OR REPLACE FUNCTION url(cstring, cstring, cstring)RETURNS url
+CREATE OR REPLACE FUNCTION url(cstring, cstring, cstring)
+RETURNS url
 AS '$libdir/url', 'url_some_field_constructor'
 LANGUAGE C IMMUTABLE STRICT;
 
@@ -65,7 +66,7 @@ AS '$libdir/url', 'getPath'
 LANGUAGE C IMMUTABLE STRICT;
 
 CREATE OR REPLACE FUNCTION getPort(url)
-RETURNS cstring
+RETURNS integer
 AS '$libdir/url', 'getPort'
 LANGUAGE C IMMUTABLE STRICT;
 
@@ -89,6 +90,11 @@ RETURNS cstring
 AS '$libdir/url', 'getUserInfo'
 LANGUAGE C IMMUTABLE STRICT;
 
+CREATE OR REPLACE FUNCTION toString(url)
+RETURNS cstring
+AS '$libdir/url', 'toString'
+LANGUAGE C IMMUTABLE STRICT;
+
 -- Comparison
 CREATE OR REPLACE FUNCTION equals(url, url)
 RETURNS BOOLEAN
@@ -104,13 +110,6 @@ CREATE OR REPLACE FUNCTION sameHost(url, url)
 RETURNS BOOLEAN
 AS '$libdir/url', 'sameHost'
 LANGUAGE C IMMUTABLE STRICT;
-
-CREATE OR REPLACE FUNCTION toString(url)
-RETURNS cstring
-AS '$libdir/url', 'toString'
-LANGUAGE C IMMUTABLE STRICT;
-
-
 
 -- Comparison
 CREATE OR REPLACE FUNCTION url_eq(url, url)
