@@ -14,7 +14,7 @@ LANGUAGE C IMMUTABLE STRICT;
 CREATE TYPE url (
 	INPUT          = url_in,
 	OUTPUT         = url_out,
-    INTERNALLENGTH = 2816
+    INTERNALLENGTH = 1024
 );
 COMMENT ON TYPE url IS 'url datatype for PostgreSQL';
 
@@ -96,20 +96,32 @@ AS '$libdir/url', 'toString'
 LANGUAGE C IMMUTABLE STRICT;
 
 -- Comparison
+
 CREATE OR REPLACE FUNCTION equals(url, url)
 RETURNS BOOLEAN
 AS '$libdir/url', 'equals'
 LANGUAGE C IMMUTABLE STRICT;
 
-CREATE OR REPLACE FUNCTION sameFile(url , url)
+CREATE OR REPLACE FUNCTION sameFile_C(url , url)
 RETURNS BOOLEAN
 AS '$libdir/url', 'sameFile'
 LANGUAGE C IMMUTABLE STRICT;
 
-CREATE OR REPLACE FUNCTION sameHost(url, url)
+CREATE OR REPLACE FUNCTION sameFile(url , url)
+RETURNS BOOLEAN
+AS 'SELECT sameFile_C($1, $2)'
+LANGUAGE SQL IMMUTABLE STRICT;
+
+CREATE OR REPLACE FUNCTION sameHost_C(url, url)
 RETURNS BOOLEAN
 AS '$libdir/url', 'sameHost'
 LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OR REPLACE FUNCTION sameHost(url, url)
+RETURNS BOOLEAN
+AS 'SELECT sameHost_C($1, $2)'
+LANGUAGE SQL IMMUTABLE STRICT;
+
 
 -- Comparison
 CREATE OR REPLACE FUNCTION url_eq(url, url)
