@@ -62,7 +62,7 @@ postgres_url *postgres_url_from_str(char *str) {
 
   if (userinfo != NULL) {
     strcpy(url->userinfo, userinfo);
-      pfree(userinfo);
+    pfree(userinfo);
   }
 
   // Authority
@@ -381,6 +381,7 @@ Datum url_copy_constructor(PG_FUNCTION_ARGS) {
       }
 
       strcpy(url->path, strcat(path_cpy, spec_substr));
+      pfree(path_cpy);
     }
   } else {
     if (strlen(context->host) != 0)
@@ -411,7 +412,11 @@ Datum getAuthority(PG_FUNCTION_ARGS) {
         strcpy(port, psprintf(":%d", url->port));
     }
 
-    PG_RETURN_CSTRING(psprintf("%s%s%s", user, url->host, port));
+    char* output = psprintf("%s%s%s", user, url->host, port);
+    pfree(user);
+    pfree(port);
+
+    PG_RETURN_CSTRING(output);
 }
 
 PG_FUNCTION_INFO_V1(getDefaultPort);
@@ -431,18 +436,17 @@ Datum getDefaultPort(PG_FUNCTION_ARGS) {
 // file = path + query
 PG_FUNCTION_INFO_V1(getFile);
 Datum getFile(PG_FUNCTION_ARGS) {
-  postgres_url *url = (postgres_url *)PG_GETARG_POINTER(0);
-  char *path_cpy = palloc(sizeof(char) * strlen(url->path));
-  strcpy(path_cpy, url->path);
+    postgres_url *url = (postgres_url *)PG_GETARG_POINTER(0);
 
-  char *query = palloc(sizeof(char) * strlen(query) + 1);
-  memset(query, 0, sizeof(char) * strlen(query) + 1);
-  if (strlen(url->query) != 0) {
+    char *query = palloc(sizeof(char) * strlen(query) + 1);
     memset(query, 0, sizeof(char) * strlen(query) + 1);
-    strcpy(query, psprintf("?%s", url->query));
-  }
+    if (strlen(url->query) != 0) {
+        strcpy(query, psprintf("?%s", url->query));
+    }
+    char* output = psprintf("%s%s", url->path, query);
+    pfree(query);
 
-  PG_RETURN_CSTRING(strcat(path_cpy, query));
+    PG_RETURN_CSTRING(output);
 }
 
 PG_FUNCTION_INFO_V1(getProtocol);
@@ -487,7 +491,7 @@ Datum getRef(PG_FUNCTION_ARGS) {
   PG_RETURN_CSTRING(url->fragment);
 }
 
-// Comparaison
+// Comparison
 
 PG_FUNCTION_INFO_V1(equals);
 Datum equals(PG_FUNCTION_ARGS) {
