@@ -102,21 +102,25 @@ RETURNS BOOLEAN
 AS '$libdir/url', 'equals'
 LANGUAGE C IMMUTABLE STRICT;
 
+-- Define sameFile with corresponding C function
 CREATE OR REPLACE FUNCTION sameFile_C(url , url)
 RETURNS BOOLEAN
 AS '$libdir/url', 'sameFile'
 LANGUAGE C IMMUTABLE STRICT;
 
+-- Define sameFile as a SQL function (index compatible)
 CREATE OR REPLACE FUNCTION sameFile(url , url)
 RETURNS BOOLEAN
 AS 'SELECT sameFile_C($1, $2)'
 LANGUAGE SQL IMMUTABLE STRICT;
 
+-- Define sameHost with corresponding C function
 CREATE OR REPLACE FUNCTION sameHost_C(url, url)
 RETURNS BOOLEAN
 AS '$libdir/url', 'sameHost'
 LANGUAGE C IMMUTABLE STRICT;
 
+-- Define sameHost as a SQL function (index compatible)
 CREATE OR REPLACE FUNCTION sameHost(url, url)
 RETURNS BOOLEAN
 AS 'SELECT sameHost_C($1, $2)'
