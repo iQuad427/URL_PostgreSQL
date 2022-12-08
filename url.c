@@ -6,8 +6,8 @@
 #include "utils/builtins.h"
 #include <time.h>
 
-#define URL_SIZE 1024
-#define SIZE_OF_FIELD 256
+#define URL_SIZE 512
+#define SIZE_OF_FIELD 80
 
 PG_MODULE_MAGIC;
 
