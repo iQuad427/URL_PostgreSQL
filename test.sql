@@ -71,8 +71,6 @@ DROP INDEX IF EXISTS url_index;
 CREATE INDEX url_index ON url_table(p_url);
 SET enable_seqscan TO OFF;
 
-EXPLAIN ANALYSE SELECT p_url FROM url_table WHERE sameFile(p_url, 'https://hello@google.com/ULB/SYSTDATA/path');
-EXPLAIN ANALYSE SELECT p_url FROM url_table WHERE sameHost(p_url, 'https://hello@google.com/ULB/SYSTDATA/path');
 EXPLAIN ANALYSE SELECT p_url FROM url_table WHERE equals(p_url, 'https://hello@google.com/ULB/SYSTDATA/path');
 EXPLAIN ANALYSE SELECT p_url FROM url_table WHERE p_url < 'https://hello@google.com/ULB/SYSTDATA/path';
 EXPLAIN ANALYSE SELECT p_url FROM url_table WHERE p_url <= 'https://hello@google.com/ULB/SYSTDATA/path';
@@ -80,6 +78,9 @@ EXPLAIN ANALYSE SELECT p_url FROM url_table WHERE p_url = 'https://hello@google.
 EXPLAIN ANALYSE SELECT p_url FROM url_table WHERE p_url >= 'https://hello@google.com/ULB/SYSTDATA/path';
 EXPLAIN ANALYSE SELECT p_url FROM url_table WHERE p_url > 'https://hello@google.com/ULB/SYSTDATA/path';
 EXPLAIN ANALYSE SELECT p_url FROM url_table WHERE p_url <> 'https://hello@google.com/ULB/SYSTDATA/path';
+EXPLAIN ANALYSE SELECT p_url FROM url_table WHERE getAuthority(p_url) = getAuthority(p_url);
+EXPLAIN ANALYSE SELECT p_url FROM url_table WHERE sameHost(p_url, 'https://hello@google.com/ULB/SYSTDATA/path');
+EXPLAIN ANALYSE SELECT p_url FROM url_table WHERE sameFile(p_url, 'https://hello@google.com/ULB/SYSTDATA/path');
 
 SET enable_seqscan TO ON;
 

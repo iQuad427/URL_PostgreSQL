@@ -199,9 +199,6 @@ Datum getProtocol(PG_FUNCTION_ARGS);
 Datum getQuery(PG_FUNCTION_ARGS);
 Datum getUserInfo(PG_FUNCTION_ARGS);
 Datum getRef(PG_FUNCTION_ARGS);
-Datum equals(PG_FUNCTION_ARGS);
-Datum sameFile(PG_FUNCTION_ARGS);
-Datum sameHost(PG_FUNCTION_ARGS);
 Datum toString(PG_FUNCTION_ARGS);
 
 // URL type constructors
@@ -398,6 +395,7 @@ Datum url_copy_constructor(PG_FUNCTION_ARGS) {
 // Authority = host + port
 PG_FUNCTION_INFO_V1(getAuthority);
 Datum getAuthority(PG_FUNCTION_ARGS) {
+    elog(DEBUG1, "getting the Authority");
     postgres_url *url = (postgres_url *)PG_GETARG_POINTER(0);
 
     char *user = palloc(sizeof(char) * strlen(url->host));
@@ -416,7 +414,7 @@ Datum getAuthority(PG_FUNCTION_ARGS) {
     pfree(user);
     pfree(port);
 
-    PG_RETURN_CSTRING(output);
+    PG_RETURN_TEXT_P(cstring_to_text(output));
 }
 
 PG_FUNCTION_INFO_V1(getDefaultPort);
@@ -438,90 +436,58 @@ PG_FUNCTION_INFO_V1(getFile);
 Datum getFile(PG_FUNCTION_ARGS) {
     postgres_url *url = (postgres_url *)PG_GETARG_POINTER(0);
 
-    char *query = palloc(sizeof(char) * strlen(query) + 1);
-    memset(query, 0, sizeof(char) * strlen(query) + 1);
+    char *query = palloc(sizeof(char) * strlen(url->query) + 1);
+    memset(query, 0, sizeof(char) * strlen(url->query) + 1);
     if (strlen(url->query) != 0) {
         strcpy(query, psprintf("?%s", url->query));
     }
     char* output = psprintf("%s%s", url->path, query);
     pfree(query);
 
-    PG_RETURN_CSTRING(output);
+    PG_RETURN_TEXT_P(cstring_to_text(output));
 }
 
 PG_FUNCTION_INFO_V1(getProtocol);
 Datum getProtocol(PG_FUNCTION_ARGS) {
+    elog(DEBUG1, "getting the Protocol");
     postgres_url *url = (postgres_url *)PG_GETARG_POINTER(0);
-    PG_RETURN_CSTRING(url->protocol);
+    PG_RETURN_TEXT_P(cstring_to_text(url->protocol));
 }
 
 PG_FUNCTION_INFO_V1(getUserInfo);
 Datum getUserInfo(PG_FUNCTION_ARGS) {
     postgres_url *url = (postgres_url *)PG_GETARG_POINTER(0);
-  PG_RETURN_CSTRING(url->userinfo);
+    PG_RETURN_TEXT_P(cstring_to_text(url->userinfo));
 }
 
 PG_FUNCTION_INFO_V1(getHost);
 Datum getHost(PG_FUNCTION_ARGS) {
     postgres_url *url = (postgres_url *)PG_GETARG_POINTER(0);
-  PG_RETURN_CSTRING(url->host);
+    PG_RETURN_TEXT_P(cstring_to_text(url->host));
 }
 
 PG_FUNCTION_INFO_V1(getPort);
 Datum getPort(PG_FUNCTION_ARGS) {
     postgres_url *url = (postgres_url *)PG_GETARG_POINTER(0);
-  PG_RETURN_INT32(url->port);
+    PG_RETURN_INT32(url->port);
 }
 
 PG_FUNCTION_INFO_V1(getPath);
 Datum getPath(PG_FUNCTION_ARGS) {
     postgres_url *url = (postgres_url *)PG_GETARG_POINTER(0);
-  PG_RETURN_CSTRING(url->path);
+    PG_RETURN_TEXT_P(cstring_to_text(url->path));
 }
 
 PG_FUNCTION_INFO_V1(getQuery);
 Datum getQuery(PG_FUNCTION_ARGS) {
     postgres_url *url = (postgres_url *)PG_GETARG_POINTER(0);
-  PG_RETURN_CSTRING(url->query);
+    PG_RETURN_TEXT_P(cstring_to_text(url->query));
 }
 
 PG_FUNCTION_INFO_V1(getRef);
 Datum getRef(PG_FUNCTION_ARGS) {
     postgres_url *url = (postgres_url *)PG_GETARG_POINTER(0);
-  PG_RETURN_CSTRING(url->fragment);
-}
-
-// Comparison
-
-PG_FUNCTION_INFO_V1(equals);
-Datum equals(PG_FUNCTION_ARGS) {
-  postgres_url *url1 = (postgres_url *)PG_GETARG_POINTER(0);
-  postgres_url *url2 = (postgres_url *)PG_GETARG_POINTER(1);
-  bool res = false;
-
-  if (!strcmp(url1->raw_url, url2->raw_url)) {
-    res = true;
-  }
-
-  PG_RETURN_BOOL(res);
-}
-
-PG_FUNCTION_INFO_V1(sameFile);
-Datum sameFile(PG_FUNCTION_ARGS) {
-  postgres_url *url1 = (postgres_url *)PG_GETARG_POINTER(0);
-  postgres_url *url2 = (postgres_url *)PG_GETARG_POINTER(1);
-  PG_RETURN_BOOL(!strcmp(url1->protocol, url2->protocol) &&
-                 !strcmp(url1->userinfo, url2->userinfo) &&
-                 !strcmp(url1->host, url2->host) && url1->port == url2->port &&
-                 !strcmp(url1->path, url2->path) &&
-                 !strcmp(url1->query, url2->query));
-}
-
-PG_FUNCTION_INFO_V1(sameHost);
-Datum sameHost(PG_FUNCTION_ARGS) {
-  postgres_url *url1 = (postgres_url *)PG_GETARG_POINTER(0);
-  postgres_url *url2 = (postgres_url *)PG_GETARG_POINTER(1);
-  PG_RETURN_BOOL(!strcmp(url1->host, url2->host));
+    PG_RETURN_TEXT_P(cstring_to_text(url->fragment));
 }
 
 // toString

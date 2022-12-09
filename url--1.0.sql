@@ -41,52 +41,52 @@ LANGUAGE C IMMUTABLE STRICT;
 
 -- Getters
 CREATE OR REPLACE FUNCTION getAuthority(url)
-RETURNS cstring
+RETURNS TEXT
 AS '$libdir/url', 'getAuthority'
 LANGUAGE C IMMUTABLE STRICT;
 
 CREATE OR REPLACE FUNCTION getDefaultPort(url)
-RETURNS int
+RETURNS INTEGER
 AS '$libdir/url', 'getDefaultPort'
 LANGUAGE C IMMUTABLE STRICT;
 
 CREATE OR REPLACE FUNCTION getFile(url)
-RETURNS cstring
+RETURNS TEXT
 AS '$libdir/url', 'getFile'
 LANGUAGE C IMMUTABLE STRICT;
 
 CREATE OR REPLACE FUNCTION getHost(url)
-RETURNS cstring
+RETURNS TEXT
 AS '$libdir/url', 'getHost'
 LANGUAGE C IMMUTABLE STRICT;
 
 CREATE OR REPLACE FUNCTION getPath(url)
-RETURNS cstring
+RETURNS TEXT
 AS '$libdir/url', 'getPath'
 LANGUAGE C IMMUTABLE STRICT;
 
 CREATE OR REPLACE FUNCTION getPort(url)
-RETURNS integer
+RETURNS INTEGER
 AS '$libdir/url', 'getPort'
 LANGUAGE C IMMUTABLE STRICT;
 
 CREATE OR REPLACE FUNCTION getProtocol(url)
-RETURNS cstring
+RETURNS TEXT
 AS '$libdir/url', 'getProtocol'
 LANGUAGE C IMMUTABLE STRICT;
 
 CREATE OR REPLACE FUNCTION getQuery(url)
-RETURNS cstring
+RETURNS TEXT
 AS '$libdir/url', 'getQuery'
 LANGUAGE C IMMUTABLE STRICT;
 
 CREATE OR REPLACE FUNCTION getRef(url)
-RETURNS cstring
+RETURNS TEXT
 AS '$libdir/url', 'getRef'
 LANGUAGE C IMMUTABLE STRICT;
 
 CREATE OR REPLACE FUNCTION getUserInfo(url)
-RETURNS cstring
+RETURNS TEXT
 AS '$libdir/url', 'getUserInfo'
 LANGUAGE C IMMUTABLE STRICT;
 
@@ -95,39 +95,27 @@ RETURNS cstring
 AS '$libdir/url', 'toString'
 LANGUAGE C IMMUTABLE STRICT;
 
--- Comparison
 
-CREATE OR REPLACE FUNCTION equals(url, url)
-RETURNS BOOLEAN
-AS '$libdir/url', 'equals'
-LANGUAGE C IMMUTABLE STRICT;
+-- Index Compatible Comparison
 
--- Define sameFile with corresponding C function
-CREATE OR REPLACE FUNCTION sameFile_C(url , url)
+CREATE OR REPLACE FUNCTION equals(url1 url, url2 url)
 RETURNS BOOLEAN
-AS '$libdir/url', 'sameFile'
-LANGUAGE C IMMUTABLE STRICT;
-
--- Define sameFile as a SQL function (index compatible)
-CREATE OR REPLACE FUNCTION sameFile(url , url)
-RETURNS BOOLEAN
-AS 'SELECT sameFile_C($1, $2)'
+AS 'SELECT url1 = url2'
 LANGUAGE SQL IMMUTABLE STRICT;
 
--- Define sameHost with corresponding C function
-CREATE OR REPLACE FUNCTION sameHost_C(url, url)
+CREATE OR REPLACE FUNCTION sameHost(url1 url, url2 url)
 RETURNS BOOLEAN
-AS '$libdir/url', 'sameHost'
-LANGUAGE C IMMUTABLE STRICT;
+AS 'SELECT getHost(url1) = getHost(url2)'
+LANGUAGE SQL IMMUTABLE STRICT;
 
--- Define sameHost as a SQL function (index compatible)
-CREATE OR REPLACE FUNCTION sameHost(url, url)
+CREATE OR REPLACE FUNCTION sameFile(url1 url, url2 url)
 RETURNS BOOLEAN
-AS 'SELECT sameHost_C($1, $2)'
+AS 'SELECT getAuthority(url1) = getAuthority(url2) AND getProtocol(url1) = getProtocol(url2) AND getFile(url1) = getFile(url2)'
 LANGUAGE SQL IMMUTABLE STRICT;
 
 
 -- Comparison
+
 CREATE OR REPLACE FUNCTION url_eq(url, url)
 RETURNS BOOLEAN
 AS '$libdir/url', 'url_eq'
